@@ -58,6 +58,206 @@ gleam run -m mcp_full_server bridge
 gleam run -m mcp_full_server full
 ```
 
+## 🧰 Using The Toolkit
+
+Below are minimal examples showing how to expose MCP items with this toolkit. You can copy these into your own Gleam project or refer to the provided binaries in `src/mcp_stdio_server.gleam` and `src/mcp_full_server.gleam`.
+
+### Define a Tool
+
+```gleam
+import gleam/dynamic/decode
+import gleam/io
+import gleam/option.{None, Some}
+import mcp_toolkit_gleam/core/protocol as mcp
+import mcp_toolkit_gleam/core/server
+
+pub type EchoArgs {
+  EchoArgs(text: String)
+}
+
+fn decode_echo_args() -> decode.Decoder(EchoArgs) {
+  use text <- decode.field("text", decode.string)
+  decode.success(EchoArgs(text:))
+}
+
+fn echo_tool() -> mcp.Tool {
+  let assert Ok(schema) =
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"text\": { \"type\": \"string\", \"description\": \"Text to echo\" }\n  },\n  \"required\": [\"text\"]\n}"
+    |> mcp.tool_input_schema
+
+  mcp.Tool(
+    name: "echo",
+    input_schema: schema,
+    description: Some("Echo back provided text"),
+    annotations: None,
+  )
+}
+
+fn handle_echo(req: mcp.CallToolRequest(EchoArgs)) {
+  let text = case req.arguments { Some(EchoArgs(text: t)) -> t | None -> "" }
+  mcp.CallToolResult(
+    content: [
+      mcp.TextToolContent(mcp.TextContent(
+        type_: "text",
+        text: "You said: " <> text,
+        annotations: None,
+      )),
+    ],
+    is_error: Some(False),
+    meta: None,
+  )
+  |> Ok
+}
+```
+
+Register it on the server builder:
+
+```gleam
+fn build_server() -> server.Server {
+  server.new("Example MCP", "0.1.0")
+  |> server.add_tool(echo_tool(), decode_echo_args(), handle_echo)
+  |> server.enable_logging()
+  |> server.build
+}
+```
+
+### Define a Resource
+
+```gleam
+fn project_readme_resource() -> mcp.Resource {
+  mcp.Resource(
+    name: "readme",
+    uri: "file:///docs/README.md",
+    description: Some("Project README contents"),
+    mime_type: Some("text/markdown"),
+    size: None,
+    annotations: None,
+  )
+}
+
+fn handle_readme(_req: mcp.ReadResourceRequest) {
+  mcp.ReadResourceResult(
+    contents: [
+      mcp.TextResource(mcp.TextResourceContents(
+        uri: "file:///docs/README.md",
+        text: "# Readme\n\nThis content would be loaded at runtime.",
+        mime_type: Some("text/markdown"),
+      )),
+    ],
+    meta: None,
+  )
+  |> Ok
+}
+
+fn with_resource(b: server.Builder) -> server.Builder {
+  b |> server.add_resource(project_readme_resource(), handle_readme)
+}
+```
+
+### Define a Prompt
+
+```gleam
+fn summary_prompt() -> mcp.Prompt {
+  mcp.Prompt(
+    name: "summarize",
+    description: Some("Generate a concise summary prompt"),
+    arguments: None,
+  )
+}
+
+fn handle_summary(_req: mcp.GetPromptRequest) {
+  mcp.GetPromptResult(
+    messages: [
+      mcp.PromptMessage(
+        role: mcp.User,
+        content: mcp.TextPromptContent(mcp.TextContent(
+          type_: "text",
+          text: "Summarize the following content in 3 bullet points.",
+          annotations: None,
+        )),
+      ),
+    ],
+    description: Some("Simple summarization prompt"),
+    meta: None,
+  )
+  |> Ok
+}
+
+fn with_prompt(b: server.Builder) -> server.Builder {
+  b |> server.add_prompt(summary_prompt(), handle_summary)
+}
+```
+
+### Build a Minimal Server
+
+```gleam
+import mcp_toolkit_gleam/transport/stdio
+
+pub fn main() {
+  let srv =
+    server.new("Example MCP", "0.1.0")
+    |> server.add_tool(echo_tool(), decode_echo_args(), handle_echo)
+    |> server.add_resource(project_readme_resource(), handle_readme)
+    |> server.add_prompt(summary_prompt(), handle_summary)
+    |> server.build
+
+  // stdio loop
+  loop_stdio(srv)
+}
+
+fn loop_stdio(srv: server.Server) {
+  case stdio.read_message() {
+    Ok(msg) ->
+      case server.handle_message(srv, msg) {
+        Ok(Some(json)) | Error(json) -> io.println(json.to_string(json))
+        _ -> Nil
+      }
+    Error(_) -> Nil
+  }
+  loop_stdio(srv)
+}
+```
+
+Tip: you can also reuse the provided `mcp_stdio_server` binary and only customize the builder logic.
+
+### Resource Templates (optional)
+
+If you want the client to instantiate resources from a pattern, register a `ResourceTemplate`:
+
+```gleam
+fn logs_template() -> mcp.ResourceTemplate {
+  mcp.ResourceTemplate(
+    name: "log_file",
+    uri_template: "file:///var/log/{date}.log",
+    description: Some("Daily log files by date"),
+    mime_type: Some("text/plain"),
+    annotations: None,
+  )
+}
+
+fn with_templates(b: server.Builder) -> server.Builder {
+  b |> server.add_resource_template(logs_template(), handle_readme)
+}
+```
+
+### Capabilities and Options
+
+- `server.enable_logging(builder)` exposes MCP logging.
+- `server.page_limit(builder, n)` sets list pagination size.
+- `server.resource_capabilities/3`, `server.tool_capabilities/2`, `server.prompt_capabilities/2` toggle change notifications if your server will send them.
+
+### Try It Over stdio
+
+Send a JSON-RPC initialize request and list tools via the shell:
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}' | gleam run -m mcp_stdio_server
+
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | gleam run -m mcp_stdio_server
+
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{"text":"hello"}}}' | gleam run -m mcp_stdio_server
+```
+
 ## 📁 Project Structure
 
 ```
