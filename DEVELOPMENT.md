@@ -4,7 +4,7 @@ This document explains how to set up a development environment for the MCP Toolk
 
 ## Requirements
 
-- **Gleam**: 1.11.1 (latest stable)
+- **Gleam**: 1.12.0 (latest stable)
 - **Erlang/OTP**: 27 (required for `gleam_json` v2.3.0+ compatibility)
 - **Rebar3**: 3 (for Erlang build tools)
 
@@ -18,7 +18,7 @@ The project includes a preconfigured DevContainer that sets up the complete deve
 2. When prompted, click "Reopen in Container" or use Command Palette → "Dev Containers: Reopen in Container"
 3. The container will automatically:
    - Use Erlang/OTP 27 base image
-   - Install Gleam 1.11.1
+   - Install Gleam 1.12.0
    - Download project dependencies
    - Configure VS Code with Gleam extension
 
@@ -39,10 +39,10 @@ If you prefer to set up the environment manually:
    erl -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().'
    ```
 
-2. **Install Gleam 1.11.1**:
+2. **Install Gleam 1.12.0**:
    ```bash
    # Download and install Gleam
-   curl -L -o gleam.tar.gz "https://github.com/gleam-lang/gleam/releases/download/v1.11.1/gleam-v1.11.1-x86_64-unknown-linux-musl.tar.gz"
+   curl -L -o gleam.tar.gz "https://github.com/gleam-lang/gleam/releases/download/v1.12.0/gleam-v1.12.0-x86_64-unknown-linux-musl.tar.gz"
    tar -xzf gleam.tar.gz -C /usr/local/bin
    rm gleam.tar.gz
 
@@ -61,7 +61,7 @@ If you prefer to set up the environment manually:
 All GitHub Actions workflows are configured to use:
 - `erlef/setup-beam@v1` action
 - Erlang/OTP version 27
-- Gleam version 1.11.1
+- Gleam version 1.12.0
 - Rebar3 version 3
 
 This ensures consistent environments across development, testing, and deployment.
@@ -81,7 +81,7 @@ If you see errors like:
 
 If you encounter build failures:
 
-1. Verify Gleam version: `gleam --version` should show `gleam 1.11.1`
+1. Verify Gleam version: `gleam --version` should show `gleam 1.12.0`
 2. Verify OTP version: `erl -eval 'io:format("~s~n", [erlang:system_info(otp_release)]), halt().'` should show `27`
 3. Clean and rebuild: `rm -rf build && gleam deps download && gleam test`
 

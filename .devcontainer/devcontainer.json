@@ -36,10 +36,10 @@
     }
   },
 
-  "postCreateCommand": "apt-get update && apt-get install -y curl jq git && curl -L -o gleam.tar.gz \"https://github.com/gleam-lang/gleam/releases/download/v1.11.1/gleam-v1.11.1-x86_64-unknown-linux-musl.tar.gz\" && tar -xzf gleam.tar.gz -C /usr/local/bin && rm gleam.tar.gz && gleam deps download",
+  "postCreateCommand": "apt-get update && apt-get install -y curl jq git && curl -L -o gleam.tar.gz \"https://github.com/gleam-lang/gleam/releases/download/v1.12.0/gleam-v1.12.0-x86_64-unknown-linux-musl.tar.gz\" && tar -xzf gleam.tar.gz -C /usr/local/bin && rm gleam.tar.gz && gleam deps download",
 
   "forwardPorts": [4000, 8080, 8081],
-  
+
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/git:1": {}

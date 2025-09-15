@@ -11,7 +11,7 @@ jobs:
   update-gleam-dependencies:
     name: Update Gleam Dependencies
     runs-on: ubuntu-latest
-    
+
     # Required permissions for creating pull requests
     permissions:
       contents: write
@@ -25,7 +25,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           otp-version: "28"
-          gleam-version: "1.11.1"
+          gleam-version: "1.12.0"
           rebar3-version: "3"
 
       # This command attempts to resolve conflicts and find the latest

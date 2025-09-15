@@ -29,7 +29,7 @@ Production-ready Model Context Protocol (MCP) Toolkit implementation in Gleam wi
 ### Prerequisites
 
 - **Erlang/OTP 28+**: For optimal performance and compatibility
-- **Gleam 1.11.1+**: Latest Gleam compiler with modern language features
+- **Gleam 1.12.0+**: Latest Gleam compiler with modern language features
 - **Git**: For version control and dependency management
 
 ### Installation
