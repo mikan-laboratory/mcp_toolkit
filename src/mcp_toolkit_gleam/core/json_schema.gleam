@@ -231,12 +231,9 @@ fn type_to_json(t: Type) -> Json {
 pub fn decoder(
   data: decode.Dynamic,
 ) -> Result(RootSchema, List(decode.DecodeError)) {
-  // Decode definitions; if absent, treat as empty. Keep root schema empty for now
-  // to match prior behaviour in this module.
-  case decode_definitions(data) {
-    Ok(defs) -> Ok(RootSchema(definitions: defs, schema: Empty([])))
-    Error(errs) -> Error(errs)
-  }
+  use defs <- result.try(decode_definitions(data))
+  use root <- result.try(decode_schema(data))
+  Ok(RootSchema(definitions: defs, schema: root))
 }
 
 fn decode_definitions(
@@ -295,13 +292,13 @@ fn decode_schema(
 }
 
 fn key_decoder(
-  dict: Dict(String, decode.Dynamic),
+  data: Dict(String, decode.Dynamic),
   key: String,
   constructor: fn(decode.Dynamic, Dict(String, decode.Dynamic)) ->
     Result(t, List(decode.DecodeError)),
 ) -> Result(fn() -> Result(t, List(decode.DecodeError)), Nil) {
-  case dict.get(dict, key) {
-    Ok(value) -> Ok(fn() { constructor(value, dict) })
+  case dict.get(data, key) {
+    Ok(value) -> Ok(fn() { constructor(value, data) })
     Error(e) -> Error(e)
   }
 }
