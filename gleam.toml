@@ -13,6 +13,7 @@ gleam_json = ">= 3.0.0 and < 4.0.0"
 jsonrpcx = ">= 1.0.0 and < 2.0.0"
 justin = ">= 1.0.1 and < 2.0.0"
 gleam_erlang = ">= 0.34.0 and < 2.0.0"
+gleam_otp = ">= 1.0.0 and < 2.0.0"
 
 # HTTP/WebSocket dependencies for all transport functionality
 # Enable Mist for HTTP/WebSocket server support
