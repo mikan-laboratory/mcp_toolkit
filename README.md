@@ -6,9 +6,9 @@ Production-ready Model Context Protocol (MCP) Toolkit implementation in Gleam wi
 
 ### Multi-Transport Support
 - **stdio**: Standard input/output transport
-- **WebSocket**: Real-time bidirectional communication on `ws://localhost:8080/mcp`
-- **Server-Sent Events (SSE)**: Server-to-client streaming on `http://localhost:8081/mcp`
-- **Transport Bridging**: Connect any two transports with filtering and transformation
+- **HTTP JSON-RPC**: `POST /mcp`
+- **WebSocket**: `GET /ws` (text frames with JSON-RPC)
+- **Server-Sent Events (SSE)**: `GET /sse` to stream, `POST /sse?id=<X-Conn-Id>` to send
 
 ### Production-Ready Architecture
 - **Latest MCP Specification**: Implements MCP 2025-06-18 with backward compatibility
@@ -45,17 +45,8 @@ gleam build
 # Lightweight stdio transport (dependency-free)
 gleam run -m mcp_stdio_server
 
-# Full server with WebSocket support
+# Network server (HTTP / WS / SSE on one port)
 gleam run -m mcp_full_server websocket
-
-# Full server with Server-Sent Events
-gleam run -m mcp_full_server sse
-
-# Transport bridging between different protocols
-gleam run -m mcp_full_server bridge
-
-# Comprehensive server with all transports
-gleam run -m mcp_full_server full
 ```
 
 ## 🧰 Using The Toolkit
@@ -353,14 +344,15 @@ gleam test --coverage
 # Core protocol dependencies
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 gleam_http = ">= 4.0.0 and < 5.0.0"
-gleam_json = ">= 2.3.0 and < 3.0.0"
+gleam_json = ">= 3.0.0 and < 4.0.0"
 jsonrpcx = ">= 1.0.0 and < 2.0.0"
 justin = ">= 1.0.1 and < 2.0.0"
-gleam_erlang = ">= 0.34.0 and < 1.0.0"
+gleam_erlang = ">= 0.34.0 and < 2.0.0"
+gleam_otp = ">= 1.0.0 and < 2.0.0"
 
-# HTTP/WebSocket transport dependencies
-mist = ">= 3.0.0 and < 4.0.0"
-wisp = ">= 0.17.0 and < 1.0.0"
+# HTTP/WebSocket/SSE
+mist = ">= 1.0.0 and < 6.0.0"
+dotenv_conf = ">= 0.2.0 and < 1.0.0"
 ```
 
 ### Development Dependencies
@@ -375,30 +367,20 @@ simplifile = ">= 2.2.1 and < 3.0.0"
 
 ### Docker Deployment
 
-The repository includes a `Dockerfile` based on the official Gleam 1.12.0 / OTP 27 image. Build and run it directly or use the provided Make targets:
+The repository includes a `Dockerfile`. Build and run it directly or use the provided Make targets:
 
 ```bash
 make build   # docker build -t mcp-toolkit .
-make run     # build + run stdio server interactively
+make run     # build + run the server
 make stop    # stop running container (if launched without --rm)
 make clean   # remove container and image locally
 ```
 
-These defaults start the `mcp_stdio_server` binary. To launch other transports, edit the `CMD` in the Dockerfile or override the command with `docker run ... gleam run -m mcp_full_server websocket`.
+The image default command starts `mcp_full_server websocket` and binds to `$PORT`.
 
 ### Environment Configuration
 ```bash
-# Configure logging
-export MCP_LOG_LEVEL=info
-export MCP_LOG_FORMAT=json
-
-# Configure transports
-export MCP_WEBSOCKET_PORT=8080
-export MCP_SSE_PORT=8081
-
-# Configure security
-export MCP_CORS_ENABLED=true
-export MCP_AUTH_ENABLED=false
+export PORT=8080
 ```
 
 ## 🔒 Security
