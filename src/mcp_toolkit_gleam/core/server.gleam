@@ -3,7 +3,7 @@ import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/json
 import gleam/list
 import gleam/result
-import jsonrpc
+import jsonrpcx
 import mcp_toolkit_gleam/core/method
 
 import gleam/option.{type Option, None, Some}
@@ -293,20 +293,20 @@ pub fn handle_message(
   message: String,
 ) -> Result(Option(json.Json), json.Json) {
   let result =
-    json.parse(message, jsonrpc.message_decoder())
-    |> result.map_error(jsonrpc.json_error)
-    |> result.map_error(jsonrpc.error_response(_, jsonrpc.NullId))
-    |> result.map_error(jsonrpc.error_response_to_json(
+    json.parse(message, jsonrpcx.message_decoder())
+    |> result.map_error(jsonrpcx.json_error)
+    |> result.map_error(jsonrpcx.error_response(_, jsonrpcx.NullId))
+    |> result.map_error(jsonrpcx.error_response_to_json(
       _,
-      jsonrpc.nothing_to_json,
+      jsonrpcx.nothing_to_json,
     ))
 
   use msg <- result.try(result)
   case msg {
-    jsonrpc.RequestMessage(request) ->
+    jsonrpcx.RequestMessage(request) ->
       handle_request(server, request) |> result.map(Some)
 
-    jsonrpc.NotificationMessage(notification) -> {
+    jsonrpcx.NotificationMessage(notification) -> {
       let _ = handle_notification(server, notification)
       Ok(None)
     }
@@ -317,7 +317,7 @@ pub fn handle_message(
 
 fn handle_request(
   server: Server,
-  request: jsonrpc.Request(Dynamic),
+  request: jsonrpcx.Request(Dynamic),
 ) -> Result(json.Json, json.Json) {
   case request.method {
     m if m == method.initialize -> {
@@ -339,8 +339,8 @@ fn handle_request(
           decode.run(params, mcp.ping_request_decoder())
           |> decode_errors_json(request.id)
           |> result.try(ping(server, _))
-          |> result.map(jsonrpc.response(_, request.id))
-          |> result.map(jsonrpc.response_to_json(_, mcp.ping_result_to_json))
+          |> result.map(jsonrpcx.response(_, request.id))
+          |> result.map(jsonrpcx.response_to_json(_, mcp.ping_result_to_json))
       }
     }
 
@@ -410,59 +410,59 @@ fn handle_request(
       )
     }
     _ ->
-      jsonrpc.method_not_found
-      |> jsonrpc.error_response(request.id)
-      |> jsonrpc.error_response_to_json(jsonrpc.nothing_to_json)
+      jsonrpcx.method_not_found
+      |> jsonrpcx.error_response(request.id)
+      |> jsonrpcx.error_response_to_json(jsonrpcx.nothing_to_json)
       |> Ok
   }
 }
 
 fn require_params(
   server: Server,
-  request: jsonrpc.Request(Dynamic),
+  request: jsonrpcx.Request(Dynamic),
   handler: fn(Server, a) -> Result(b, json.Json),
   params_decoder: decode.Decoder(a),
   result_encoder: fn(b) -> json.Json,
 ) -> Result(json.Json, json.Json) {
   case request.params {
     None ->
-      jsonrpc.invalid_params
-      |> jsonrpc.error_response(request.id)
-      |> jsonrpc.error_response_to_json(jsonrpc.nothing_to_json)
+      jsonrpcx.invalid_params
+      |> jsonrpcx.error_response(request.id)
+      |> jsonrpcx.error_response_to_json(jsonrpcx.nothing_to_json)
       |> Error
     Some(params) ->
       decode.run(params, params_decoder)
       |> decode_errors_json(request.id)
       |> result.try(handler(server, _))
-      |> result.map(jsonrpc.response(_, request.id))
-      |> result.map(jsonrpc.response_to_json(_, result_encoder))
+      |> result.map(jsonrpcx.response(_, request.id))
+      |> result.map(jsonrpcx.response_to_json(_, result_encoder))
   }
 }
 
 fn paginated_params(
   server: Server,
-  request: jsonrpc.Request(Dynamic),
+  request: jsonrpcx.Request(Dynamic),
   handler: fn(Server, mcp.ListRequest) -> Result(a, json.Json),
   encoder: fn(a) -> json.Json,
 ) -> Result(json.Json, json.Json) {
   case request.params {
     None ->
       handler(server, mcp.ListRequest(None))
-      |> result.map(jsonrpc.response(_, request.id))
-      |> result.map(jsonrpc.response_to_json(_, encoder))
+      |> result.map(jsonrpcx.response(_, request.id))
+      |> result.map(jsonrpcx.response_to_json(_, encoder))
 
     Some(params) ->
       decode.run(params, mcp.list_request_decoder())
       |> decode_errors_json(request.id)
       |> result.try(handler(server, _))
-      |> result.map(jsonrpc.response(_, request.id))
-      |> result.map(jsonrpc.response_to_json(_, encoder))
+      |> result.map(jsonrpcx.response(_, request.id))
+      |> result.map(jsonrpcx.response_to_json(_, encoder))
   }
 }
 
 fn handle_notification(
   _server: Server,
-  notification: jsonrpc.Notification(Dynamic),
+  notification: jsonrpcx.Notification(Dynamic),
 ) -> Nil {
   case notification.method {
     // m if m == method.notification_resources_list_changed -> todo
@@ -647,10 +647,13 @@ pub fn call_tool(
 
 fn decode_errors_json(
   result: Result(a, List(decode.DecodeError)),
-  id: jsonrpc.Id,
+  id: jsonrpcx.Id,
 ) -> Result(a, json.Json) {
   result
-  |> result.map_error(jsonrpc.decode_errors)
-  |> result.map_error(jsonrpc.error_response(_, id))
-  |> result.map_error(jsonrpc.error_response_to_json(_, jsonrpc.nothing_to_json))
+  |> result.map_error(jsonrpcx.decode_errors)
+  |> result.map_error(jsonrpcx.error_response(_, id))
+  |> result.map_error(jsonrpcx.error_response_to_json(
+    _,
+    jsonrpcx.nothing_to_json,
+  ))
 }

@@ -9,7 +9,7 @@ import gleam/string
 import mcp_toolkit_gleam/core/protocol as mcp
 import mcp_toolkit_gleam/core/server
 import mcp_toolkit_gleam/core/transport.{type Transport, type TransportEvent, type TransportMessage}
-import jsonrpc
+import jsonrpcx
 
 /// Bidirectional server state
 pub type BidirectionalServer {
@@ -56,7 +56,7 @@ pub fn new_bidirectional_server(
   transports: List(Transport),
 ) -> Result(BidirectionalServer, String) {
   let message_subject = process.new_subject()
-  
+
   Ok(BidirectionalServer(
     server: server,
     transports: transports,
@@ -76,7 +76,7 @@ pub fn start_bidirectional_server(
     |> list.map(transport.create_transport)
     |> result.all
   )
-  
+
   // Start transport event handlers
   list.each(transport_results, fn(transport_interface) {
     case transport_interface.start() {
@@ -88,17 +88,17 @@ pub fn start_bidirectional_server(
       }
     }
   })
-  
+
   // Start the main server actor
   let server_actor = actor.start_spec(actor.Spec(
-    init: fn() { 
-      actor.Ready(server, process.new_selector() 
+    init: fn() {
+      actor.Ready(server, process.new_selector()
         |> process.selecting(server.message_subject, fn(msg) { msg }))
     },
     init_timeout: 5000,
     loop: handle_server_message,
   ))
-  
+
   case server_actor {
     Ok(actor_subject) -> {
       io.println("Bidirectional MCP server started")
@@ -174,10 +174,10 @@ fn handle_incoming_message(
   state: BidirectionalServer,
 ) -> actor.Next(ServerMessage, BidirectionalServer) {
   // Parse JSON-RPC message
-  case json.decode(message.content, jsonrpc.decode_message) {
+  case json.decode(message.content, jsonrpcx.decode_message) {
     Ok(rpc_message) -> {
       case rpc_message {
-        jsonrpc.Request(id, method, params) -> {
+        jsonrpcx.Request(id, method, params) -> {
           // Handle client request using existing server
           case server.handle_message(state.server, message.content) {
             Ok(Some(response)) -> {
@@ -199,15 +199,15 @@ fn handle_incoming_message(
             }
           }
         }
-        jsonrpc.Notification(method, params) -> {
+        jsonrpcx.Notification(method, params) -> {
           // Handle client notification
           handle_client_notification(method, params, state)
         }
-        jsonrpc.Response(id, result) -> {
+        jsonrpcx.Response(id, result) -> {
           // Handle response to server-initiated request
           handle_client_response(id, result, state)
         }
-        jsonrpc.ErrorResponse(id, error) -> {
+        jsonrpcx.ErrorResponse(id, error) -> {
           // Handle error response to server-initiated request
           let mcp_error = mcp.ApplicationError(error.message)
           process.send(state.message_subject, RequestResponse(string.inspect(id), Error(mcp_error)))
@@ -247,7 +247,7 @@ fn handle_client_notification(
 /// Handle client responses to server-initiated requests
 fn handle_client_response(
   id: json.Json,
-  result: Result(json.Json, jsonrpc.Error),
+  result: Result(json.Json, jsonrpcx.Error),
   state: BidirectionalServer,
 ) -> actor.Next(ServerMessage, BidirectionalServer) {
   let id_str = json.to_string(id)
@@ -270,9 +270,9 @@ fn send_notification_to_clients(
   target: Option(String),
   state: BidirectionalServer,
 ) -> Nil {
-  let notification = jsonrpc.Notification(method, Some(params))
-  let message_content = json.to_string(jsonrpc.encode_message(notification))
-  
+  let notification = jsonrpcx.Notification(method, Some(params))
+  let message_content = json.to_string(jsonrpcx.encode_message(notification))
+
   case target {
     Some(client_id) -> {
       // Send to specific client
@@ -295,9 +295,9 @@ fn send_request_to_clients(
   state: BidirectionalServer,
 ) -> actor.Next(ServerMessage, BidirectionalServer) {
   let request_id = json.int(state.next_request_id)
-  let request = jsonrpc.Request(request_id, method, Some(params))
-  let message_content = json.to_string(jsonrpc.encode_message(request))
-  
+  let request = jsonrpcx.Request(request_id, method, Some(params))
+  let message_content = json.to_string(jsonrpcx.encode_message(request))
+
   case target {
     Some(client_id) -> {
       send_to_client(client_id, message_content, state)
@@ -308,7 +308,7 @@ fn send_request_to_clients(
       })
     }
   }
-  
+
   let new_state = BidirectionalServer(..state, next_request_id: state.next_request_id + 1)
   actor.continue(new_state)
 }

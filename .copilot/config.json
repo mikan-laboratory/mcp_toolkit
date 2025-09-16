@@ -7,7 +7,7 @@
         "language": "gleam",
         "namingConvention": {
           "functions": "snake_case",
-          "variables": "snake_case", 
+          "variables": "snake_case",
           "types": "PascalCase",
           "modules": "snake_case"
         },
@@ -22,13 +22,13 @@
         "architecture": "functional",
         "targetRuntime": "OTP 28",
         "dependencies": {
-          "core": ["gleam_stdlib", "gleam_json", "jsonrpc"],
+          "core": ["gleam_stdlib", "gleam_json", "jsonrpcx"],
           "optional": ["gleam_http", "mist", "wisp"]
         }
       },
       "priorities": [
         "Code clarity and readability",
-        "Type safety and error handling", 
+        "Type safety and error handling",
         "Performance and memory efficiency",
         "OTP 28 compatibility",
         "Comprehensive testing"

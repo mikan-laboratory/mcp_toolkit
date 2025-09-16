@@ -4,7 +4,7 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/function
 import gleam/json.{type Json}
 import gleam/option.{type Option}
-import jsonrpc
+import jsonrpcx
 import mcp_toolkit_gleam/core/json_schema
 
 // 2025-06-18 (Latest MCP Specification)
@@ -192,7 +192,7 @@ pub fn meta_to_json(meta: Meta) -> Json {
 // }
 
 pub type RequestId =
-  jsonrpc.Id
+  jsonrpcx.Id
 
 pub type CancelledNotification {
   CancelledNotification(reason: Option(String), request_id: RequestId)
@@ -200,7 +200,7 @@ pub type CancelledNotification {
 
 pub fn cancelled_notification_decoder() -> Decoder(CancelledNotification) {
   use reason <- omittable_field("reason", decode.string)
-  use request_id <- decode.field("requestId", jsonrpc.id_decoder())
+  use request_id <- decode.field("requestId", jsonrpcx.id_decoder())
   decode.success(CancelledNotification(reason:, request_id:))
 }
 
@@ -208,7 +208,7 @@ pub fn cancelled_notification_to_json(
   cancelled_notification: CancelledNotification,
 ) -> Json {
   let CancelledNotification(reason:, request_id:) = cancelled_notification
-  [#("requestId", jsonrpc.id_to_json(request_id))]
+  [#("requestId", jsonrpcx.id_to_json(request_id))]
   |> omittable_to_json("reason", reason, json.string)
   |> json.object
 }
