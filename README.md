@@ -251,11 +251,11 @@ fn with_templates(b: server.Builder) -> server.Builder {
 Send a JSON-RPC initialize request and list tools via the shell:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}' | gleam run -m mcp_stdio_server
+echo '{"jsonrpcx":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}' | gleam run -m mcp_stdio_server
 
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | gleam run -m mcp_stdio_server
+echo '{"jsonrpcx":"2.0","id":2,"method":"tools/list"}' | gleam run -m mcp_stdio_server
 
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{"text":"hello"}}}' | gleam run -m mcp_stdio_server
+echo '{"jsonrpcx":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{"text":"hello"}}}' | gleam run -m mcp_stdio_server
 ```
 
 ## 📁 Project Structure
@@ -354,7 +354,7 @@ gleam test --coverage
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 gleam_http = ">= 4.0.0 and < 5.0.0"
 gleam_json = ">= 2.3.0 and < 3.0.0"
-jsonrpc = ">= 1.0.0 and < 2.0.0"
+jsonrpcx = ">= 1.0.0 and < 2.0.0"
 justin = ">= 1.0.1 and < 2.0.0"
 gleam_erlang = ">= 0.34.0 and < 1.0.0"
 
@@ -374,15 +374,17 @@ simplifile = ">= 2.2.1 and < 3.0.0"
 ## 🚦 Production Deployment
 
 ### Docker Deployment
-```dockerfile
-FROM gleam:latest
-WORKDIR /app
-COPY . .
-RUN gleam deps download
-RUN gleam build
-EXPOSE 8080 8081
-CMD ["gleam", "run", "--", "mcpserver", "full"]
+
+The repository includes a `Dockerfile` based on the official Gleam 1.12.0 / OTP 27 image. Build and run it directly or use the provided Make targets:
+
+```bash
+make build   # docker build -t mcp-toolkit .
+make run     # build + run stdio server interactively
+make stop    # stop running container (if launched without --rm)
+make clean   # remove container and image locally
 ```
+
+These defaults start the `mcp_stdio_server` binary. To launch other transports, edit the `CMD` in the Dockerfile or override the command with `docker run ... gleam run -m mcp_full_server websocket`.
 
 ### Environment Configuration
 ```bash

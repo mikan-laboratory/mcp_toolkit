@@ -1,13 +1,24 @@
 /// MCP Toolkit Gleam - Full Server with All Transports
 /// Production-ready MCP server with WebSocket, SSE, and stdio transports
 import argv
+import gleam/bytes_tree
 import gleam/dynamic/decode
+import gleam/http
+import gleam/http/request
+import gleam/http/response
+import gleam/int
 import gleam/io
 import gleam/json
 import gleam/option.{None, Some}
+
+// import gleam/result
+import dotenv_conf
+import gleam/bit_array
+import gleam/string
 import mcp_toolkit_gleam/core/protocol as mcp
 import mcp_toolkit_gleam/core/server
 import mcp_toolkit_gleam/transport/stdio
+import mist
 
 // import mcp_toolkit_gleam/transport_optional/websocket
 // import mcp_toolkit_gleam/transport_optional/sse
@@ -17,7 +28,8 @@ import mcp_toolkit_gleam/transport/stdio
 pub fn main() {
   case argv.load().arguments {
     ["stdio"] -> execute_stdio_transport_only()
-    // ["websocket"] -> run_websocket_server()
+    ["websocket"] -> run_web_server(None)
+    ["websocket", port_str] -> run_web_server(Some(port_str))
     // ["sse"] -> run_sse_server()
     // ["bridge"] -> run_bridge_example()
     // ["full"] -> run_full_server()
@@ -34,24 +46,149 @@ fn print_usage() {
   io.println("")
   io.println("Transports:")
   io.println("  stdio     - stdio transport only (dependency-free)")
-  // io.println("  websocket - WebSocket server on ws://localhost:8080/mcp")
+  io.println("  websocket - HTTP+WebSocket server on $PORT")
   // io.println("  sse       - Server-Sent Events on http://localhost:8081/mcp")
   // io.println("  bridge    - Transport bridging example")
   // io.println("  full      - All transports with bidirectional communication")
   io.println("")
   io.println("Examples:")
   io.println("  gleam run -- mcpserver stdio")
-  // io.println("  gleam run -- mcpserver websocket")
+  io.println("  gleam run -- mcpserver websocket")
   // io.println("  gleam run -- mcpserver full")
   io.println("")
-  io.println("Note: WebSocket and SSE transports are currently disabled.")
-  io.println("To enable them, uncomment mist dependency in gleam.toml")
+  io.println("Note: 'websocket' mode runs a minimal HTTP server.")
 }
 
 fn execute_stdio_transport_only() {
   io.println("Starting MCP Toolkit with stdio transport...")
   let server = create_comprehensive_production_server()
   execute_stdio_message_loop(server)
+}
+
+/// Minimal HTTP server that binds to $PORT
+fn run_web_server(cli_port: option.Option(String)) {
+  let env_port =
+    dotenv_conf.read_file(".env", fn(file) {
+      dotenv_conf.read_int_or("PORT", file, 8080)
+    })
+
+  let port = case cli_port {
+    Some(p) ->
+      case int.parse(p) {
+        Ok(i) -> i
+        Error(_) -> env_port
+      }
+    None -> env_port
+  }
+
+  let srv = create_comprehensive_production_server()
+
+  let handler = fn(req: request.Request(mist.Connection)) -> response.Response(
+    mist.ResponseData,
+  ) {
+    case request.path_segments(req) {
+      [] ->
+        response.new(200)
+        |> response.set_header("Content-Type", "text/plain")
+        |> response.set_body(mist.Bytes(bytes_tree.from_string("ok")))
+      ["health"] ->
+        response.new(200)
+        |> response.set_header("Content-Type", "application/json")
+        |> response.set_body(
+          mist.Bytes(bytes_tree.from_string("{\"status\":\"ok\"}")),
+        )
+      ["mcp"] -> {
+        // HTTP JSON-RPC endpoint: POST only
+        case req.method {
+          http.Post -> {
+            case mist.read_body(req, 1_000_000) {
+              Ok(req) -> {
+                let body_bits = req.body
+                let body = case bit_array.to_string(body_bits) {
+                  Ok(s) -> s
+                  Error(_) -> ""
+                }
+                case server.handle_message(srv, body) {
+                  Ok(Some(j)) ->
+                    response.new(200)
+                    |> response.set_header("Content-Type", "application/json")
+                    |> response.set_body(
+                      mist.Bytes(bytes_tree.from_string(json.to_string(j))),
+                    )
+                  Error(j) ->
+                    response.new(200)
+                    |> response.set_header("Content-Type", "application/json")
+                    |> response.set_body(
+                      mist.Bytes(bytes_tree.from_string(json.to_string(j))),
+                    )
+                  _ ->
+                    response.new(204)
+                    |> response.set_body(mist.Bytes(bytes_tree.new()))
+                }
+              }
+              Error(_) ->
+                response.new(400)
+                |> response.set_header("Content-Type", "text/plain")
+                |> response.set_body(
+                  mist.Bytes(bytes_tree.from_string("invalid body")),
+                )
+            }
+          }
+          _ ->
+            response.new(405)
+            |> response.set_header("Allow", "POST")
+            |> response.set_body(
+              mist.Bytes(bytes_tree.from_string("method not allowed")),
+            )
+        }
+      }
+      ["ws"] -> {
+        // WebSocket MCP endpoint: text frames with JSON-RPC messages
+        let on_init = fn(_conn: mist.WebsocketConnection) { #(srv, None) }
+        let on_close = fn(_state: server.Server) { Nil }
+        let ws_handler = fn(
+          state: server.Server,
+          msg: mist.WebsocketMessage(Nil),
+          conn: mist.WebsocketConnection,
+        ) {
+          case msg {
+            mist.Text(text) -> {
+              case server.handle_message(state, text) {
+                Ok(Some(j)) -> {
+                  let _ = mist.send_text_frame(conn, json.to_string(j))
+                  mist.continue(state)
+                }
+                Error(j) -> {
+                  let _ = mist.send_text_frame(conn, json.to_string(j))
+                  mist.continue(state)
+                }
+                _ -> mist.continue(state)
+              }
+            }
+            _ -> mist.continue(state)
+          }
+        }
+        mist.websocket(
+          request: req,
+          handler: ws_handler,
+          on_init: on_init,
+          on_close: on_close,
+        )
+      }
+      _ ->
+        response.new(404)
+        |> response.set_header("Content-Type", "text/plain")
+        |> response.set_body(mist.Bytes(bytes_tree.from_string("not found")))
+    }
+  }
+
+  case
+    mist.new(handler) |> mist.port(port) |> mist.bind("0.0.0.0") |> mist.start
+  {
+    Ok(_) ->
+      io.println("HTTP server started on 0.0.0.0:" <> int.to_string(port))
+    Error(err) -> io.println("Failed to start server: " <> string.inspect(err))
+  }
 }
 
 fn execute_stdio_message_loop(server: server.Server) -> Nil {

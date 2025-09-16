@@ -15,7 +15,9 @@ justin = ">= 1.0.1 and < 2.0.0"
 gleam_erlang = ">= 0.34.0 and < 2.0.0"
 
 # HTTP/WebSocket dependencies for all transport functionality
-# mist = ">= 1.0.0 and < 3.0.0"
+# Enable Mist for HTTP/WebSocket server support
+mist = ">= 1.0.0 and < 6.0.0"
+dotenv_conf = ">= 0.2.0 and < 1.0.0"
 # wisp = ">= 0.10.0 and < 1.0.0"
 
 # Build targets
