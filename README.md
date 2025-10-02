@@ -40,6 +40,31 @@ gleam run -m mcp_full_server serve
 gleam run -m mcp_full_server serve 4000
 ```
 
+### Quick curl checks (demo server)
+
+```bash
+# Start demo build (HTTP)
+MCP_TOOLKIT_DEMO=1 PORT=4000 gleam run -m mcp_full_server serve
+
+# List tools over HTTP JSON-RPC
+curl -X POST http://localhost:4000/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+# Call the sample weather tool
+curl -X POST http://localhost:4000/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_weather","arguments":{"location":"Paris"}}}'
+
+# Open SSE stream (note the `X-Conn-Id` header value, e.g. `sse_1`)
+curl -iN http://localhost:4000/sse
+
+# From another terminal, POST a message to that connection id (replace `sse_1`)
+curl -X POST "http://localhost:4000/sse?id=sse_1" \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/list"}'
+```
+
 Endpoints exposed when `serve` is running:
 
 | Route   | Method(s) | Description |
