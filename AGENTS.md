@@ -15,7 +15,7 @@
 - Format: `gleam format` (applies project style)
 - Test: `gleam test` (runs gleeunit + Birdie snapshots)
 - Run stdio server: `gleam run -m mcp_stdio_server`
-- Run full server variants: `gleam run -m mcp_full_server websocket|sse|bridge|full`
+- Run HTTP/WebSocket/SSE server: `gleam run -m mcp_full_server serve [port]`
 
 ## Coding Style & Naming Conventions
 - Language: Gleam (2‑space indentation, no tabs).

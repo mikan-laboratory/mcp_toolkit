@@ -1,93 +1,31 @@
 #!/bin/bash
 
-echo "=== MCP Toolkit Gleam - Production-Ready Implementation Demo ==="
-echo ""
+set -euo pipefail
 
-# Display help information
-echo "🚀 Available Commands:"
-echo ""
-echo "1. gleam run -m mcp_stdio_server stdio     - Lightweight stdio MCP server"
-echo "2. gleam run -m mcp_full_server websocket  - WebSocket MCP server (ws://localhost:8080/mcp)"  
-echo "3. gleam run -m mcp_full_server sse        - Server-Sent Events MCP server (http://localhost:8081/mcp)"
-echo "4. gleam run -m mcp_full_server bridge     - Bridge between stdio and WebSocket"
-echo "5. gleam run -m mcp_full_server full       - Full bidirectional server with all transports"
-echo ""
+cat <<'DEMO'
+=== MCP Toolkit Gleam - Quick Demo ===
 
-echo "📋 Production Features:"
-echo ""
-echo "✅ Multiple Transport Support:"
-echo "   • stdio - Traditional stdin/stdout communication"
-echo "   • WebSocket - Real-time bidirectional communication"  
-echo "   • SSE - Server-Sent Events with HTTP POST for client messages"
-echo ""
-echo "✅ Bidirectional Communication:"
-echo "   • Server-initiated requests and notifications"
-echo "   • Resource/tool/prompt change notifications"
-echo "   • Client capability tracking"
-echo ""
-echo "✅ Transport Bridging:"
-echo "   • Connect different transports together"
-echo "   • Message filtering (requests-only, notifications-only)"
-echo "   • Message transformation and routing"
-echo ""
-echo "✅ Enhanced MCP Protocol Support:"
-echo "   • Resource subscriptions"
-echo "   • Real-time change notifications"
-echo "   • Logging capabilities"
-echo "   • Full MCP 2025-06-18 compliance"
-echo ""
+Available commands:
+  • gleam run -m mcp_stdio_server
+      Start the stdio-only MCP server (no external deps).
 
-echo "🏗️ Architecture:"
-echo ""
-echo "┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐"
-echo "│   MCP Client    │◄──►│  Transport Layer │◄──►│   MCP Server    │"
-echo "│                 │    │                  │    │                 │"
-echo "│  • Claude       │    │  • stdio         │    │  • Resources    │"
-echo "│  • VS Code      │    │  • WebSocket     │    │  • Tools        │"
-echo "│  • Custom App   │    │  • SSE           │    │  • Prompts      │"
-echo "└─────────────────┘    └──────────────────┘    └─────────────────┘"
-echo "                              │"
-echo "                       ┌──────▼──────┐"
-echo "                       │   Bridge    │"
-echo "                       │             │"
-echo "                       │ • Filter    │"
-echo "                       │ • Transform │"
-echo "                       │ • Route     │"
-echo "                       └─────────────┘"
-echo ""
+  • gleam run -m mcp_full_server serve [port]
+      Launch the HTTP/WebSocket/SSE server. Defaults to the PORT env var or 8080.
 
-echo "📚 Quick Examples:"
-echo ""
-echo "# Test stdio mode (lightweight, dependency-free):"
-echo 'echo '"'"'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{}}}'"'"' | gleam run -m mcp_stdio_server'
-echo ""
-echo "# Start WebSocket server:"
-echo "gleam run -m mcp_full_server websocket"
-echo "# Then connect WebSocket client to: ws://localhost:8080/mcp"
-echo ""
-echo "# Start SSE server:"  
-echo "gleam run -m mcp_full_server sse"
-echo "# Then open: http://localhost:8081/mcp for SSE stream"
-echo "# Send messages via: curl -X POST http://localhost:8081/mcp -d '{...}'"
-echo ""
-echo "# Start full server with all transports:"
-echo "gleam run -m mcp_full_server full"
-echo ""
+Endpoints when running `serve`:
+  • GET  /          -> plain text health check
+  • GET  /health    -> JSON health response
+  • POST /mcp       -> HTTP JSON-RPC endpoint
+  • GET  /ws        -> WebSocket endpoint
+  • GET  /sse       -> SSE stream (POST /sse to relay messages)
 
-echo "🔧 Development:"
-echo ""
-echo "The implementation maintains full backward compatibility while adding:"
-echo "• Core protocol implementation (src/mcp_toolkit_gleam/core/)"
-echo "• Transport abstraction layer (src/mcp_toolkit_gleam/transport/)"
-echo "• Optional transports (src/mcp_toolkit_gleam/transport_optional/)"
-echo "• Enhanced main applications (src/mcp_stdio_server.gleam, src/mcp_full_server.gleam)"
-echo ""
-echo "• Comprehensive test suite with coverage for all features"
-echo "• OTP 28 compatibility for modern Erlang environments"
-echo "• Google code standards compliance throughout"
-echo ""
+Example session:
+  PORT=4000 gleam run -m mcp_full_server serve
+  curl http://localhost:4000/health
+  websocat ws://localhost:4000/ws
 
-echo "This implementation provides a production-ready MCP Toolkit with comprehensive"
-echo "multi-transport support, bidirectional communication, and modern development practices!"
-echo ""
-echo "=== Ready for Production Use! ==="
+Customize the server by replacing the builder used in both binaries with your own
+`server.Server` (see README for a walkthrough).
+
+=== Happy hacking! ===
+DEMO

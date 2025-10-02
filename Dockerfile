@@ -10,4 +10,4 @@ RUN gleam deps download \
 EXPOSE 8080
 
 # Pass the platform-provided $PORT to the app as an argument
-CMD ["sh", "-lc", "gleam run -m mcp_full_server websocket ${PORT:-8080}"]
+CMD ["sh", "-lc", "gleam run -m mcp_full_server serve ${PORT:-8080}"]
