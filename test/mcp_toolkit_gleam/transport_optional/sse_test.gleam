@@ -1,7 +1,7 @@
+import gleam/erlang/process
+import gleam/string
 import gleeunit
 import gleeunit/should
-import gleam/erlang/process as process
-import gleam/string
 import mcp_toolkit_gleam/transport_optional/sse
 
 pub fn main() {

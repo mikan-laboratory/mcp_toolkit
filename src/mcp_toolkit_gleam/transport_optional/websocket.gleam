@@ -1,7 +1,7 @@
-import gleam/json
-import gleam/option
 import gleam/http/request
 import gleam/http/response
+import gleam/json
+import gleam/option
 import mcp_toolkit_gleam/core/server
 import mist
 
@@ -12,9 +12,7 @@ pub fn handle(
   req: request.Request(mist.Connection),
   srv: server.Server,
 ) -> response.Response(mist.ResponseData) {
-  let on_init = fn(_conn: mist.WebsocketConnection) {
-    #(srv, option.None)
-  }
+  let on_init = fn(_conn: mist.WebsocketConnection) { #(srv, option.None) }
 
   let on_close = fn(_state: server.Server) { Nil }
 
@@ -41,5 +39,10 @@ pub fn handle(
     }
   }
 
-  mist.websocket(request: req, handler: ws_handler, on_init: on_init, on_close: on_close)
+  mist.websocket(
+    request: req,
+    handler: ws_handler,
+    on_init: on_init,
+    on_close: on_close,
+  )
 }

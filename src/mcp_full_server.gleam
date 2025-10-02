@@ -1,7 +1,11 @@
 /// MCP Toolkit Gleam - Full Server with All Transports
 /// Production-ready MCP server with WebSocket, SSE, and stdio transports
+import app/server as app_server
 import argv
+import dotenv_conf
+import gleam/bit_array
 import gleam/bytes_tree
+import gleam/erlang/process
 import gleam/http
 import gleam/http/request
 import gleam/http/response
@@ -9,16 +13,12 @@ import gleam/int
 import gleam/io
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import dotenv_conf
-import gleam/bit_array
 import gleam/string
-import app/server as app_server
-import gleam/erlang/process
 import mcp_toolkit_gleam/core/server
 import mcp_toolkit_gleam/transport/stdio
-import mist
+import mcp_toolkit_gleam/transport_optional/sse
 import mcp_toolkit_gleam/transport_optional/websocket as ws
-import mcp_toolkit_gleam/transport_optional/sse as sse
+import mist
 
 // import mcp_toolkit_gleam/transport_optional/websocket
 // import mcp_toolkit_gleam/transport_optional/sse
@@ -147,7 +147,9 @@ fn run_web_server(cli_port: Option(String)) {
           _ ->
             response.new(405)
             |> response.set_header("Allow", "GET, POST")
-            |> response.set_body(mist.Bytes(bytes_tree.from_string("method not allowed")))
+            |> response.set_body(
+              mist.Bytes(bytes_tree.from_string("method not allowed")),
+            )
         }
       }
       _ ->

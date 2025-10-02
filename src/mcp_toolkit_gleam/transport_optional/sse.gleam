@@ -1,7 +1,9 @@
 import gleam/bit_array
 import gleam/bytes_tree
 import gleam/dict
+
 // import gleam/http
+import gleam/erlang/process
 import gleam/http/request
 import gleam/http/response
 import gleam/int
@@ -13,7 +15,6 @@ import gleam/result
 import gleam/string_tree
 import mcp_toolkit_gleam/core/server
 import mist
-import gleam/erlang/process as process
 
 pub type SseMsg {
   Push(String)
@@ -28,7 +29,10 @@ pub type RegistryMsg {
 }
 
 pub fn start_registry() -> process.Subject(RegistryMsg) {
-  let loop = fn(state: #(dict.Dict(String, process.Subject(SseMsg)), Int), msg: RegistryMsg) {
+  let loop = fn(
+    state: #(dict.Dict(String, process.Subject(SseMsg)), Int),
+    msg: RegistryMsg,
+  ) {
     let #(table, next_id) = state
     case msg {
       Alloc(reply) -> {
@@ -39,11 +43,10 @@ pub fn start_registry() -> process.Subject(RegistryMsg) {
       Put(id, subj) -> actor.continue(#(dict.insert(table, id, subj), next_id))
       Remove(id) -> actor.continue(#(dict.delete(table, id), next_id))
       Get(id, reply) -> {
-        let subject_opt =
-          case dict.get(table, id) {
-            Ok(s) -> option.Some(s)
-            Error(_) -> option.None
-          }
+        let subject_opt = case dict.get(table, id) {
+          Ok(s) -> option.Some(s)
+          Error(_) -> option.None
+        }
         process.send(reply, subject_opt)
         actor.continue(state)
       }
@@ -100,21 +103,20 @@ pub fn handle_post(
   registry: process.Subject(RegistryMsg),
   srv: server.Server,
 ) -> response.Response(mist.ResponseData) {
-  let id =
-    case request.get_query(req) {
-      Ok(qs) ->
-        qs
-        |> list.find(fn(pair) {
-          let #(k, _v) = pair
-          k == "id"
-        })
-        |> result.map(fn(pair) {
-          let #(_k, v) = pair
-          v
-        })
-        |> result.unwrap("")
-      Error(_) -> ""
-    }
+  let id = case request.get_query(req) {
+    Ok(qs) ->
+      qs
+      |> list.find(fn(pair) {
+        let #(k, _v) = pair
+        k == "id"
+      })
+      |> result.map(fn(pair) {
+        let #(_k, v) = pair
+        v
+      })
+      |> result.unwrap("")
+    Error(_) -> ""
+  }
 
   case id {
     "" ->
@@ -148,7 +150,9 @@ pub fn handle_post(
         }
         Error(_) ->
           response.new(400)
-          |> response.set_body(mist.Bytes(bytes_tree.from_string("invalid body")))
+          |> response.set_body(
+            mist.Bytes(bytes_tree.from_string("invalid body")),
+          )
       }
     }
   }

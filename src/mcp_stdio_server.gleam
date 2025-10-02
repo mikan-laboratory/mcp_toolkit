@@ -1,11 +1,11 @@
 /// MCP Toolkit Gleam - Stdio Transport Only
 /// Production-ready MCP server with stdio transport (dependency-free)
+import app/server as app_server
 import gleam/io
 import gleam/json
 import gleam/option.{Some}
 import mcp_toolkit_gleam/core/server
 import mcp_toolkit_gleam/transport/stdio
-import app/server as app_server
 
 pub fn main() {
   io.println("MCP Toolkit Gleam - Stdio Transport")
