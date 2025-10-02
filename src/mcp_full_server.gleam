@@ -13,6 +13,7 @@ import dotenv_conf
 import gleam/bit_array
 import gleam/string
 import app/server as app_server
+import gleam/erlang/process
 import mcp_toolkit_gleam/core/server
 import mcp_toolkit_gleam/transport/stdio
 import mist
@@ -159,8 +160,10 @@ fn run_web_server(cli_port: Option(String)) {
   case
     mist.new(handler) |> mist.port(port) |> mist.bind("0.0.0.0") |> mist.start
   {
-    Ok(_) ->
+    Ok(_) -> {
       io.println("HTTP server started on 0.0.0.0:" <> int.to_string(port))
+      process.sleep_forever()
+    }
     Error(err) -> io.println("Failed to start server: " <> string.inspect(err))
   }
 }
