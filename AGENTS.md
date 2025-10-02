@@ -1,21 +1,19 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/` — Gleam sources and entrypoints:
-  - `mcp_stdio_server.gleam`, `mcp_full_server.gleam` (binaries)
-  - `mcp_toolkit_gleam/` with `core/`, `transport/`, and `transport_optional/` modules
+- `src/` — Gleam sources for the library:
+  - `mcp_toolkit.gleam` (public re-exports)
+  - `mcp_toolkit/` with `core/`, `transport/`, and `transport_optional/` modules
+  - `mcp_ffi.erl` and `mcp_ffi.mjs` power the cross-platform stdio transport
 - `test/` — mirrors `src/` layout; unit, integration, and snapshot tests
 - `birdie_snapshots/` — snapshot data used by Birdie tests
 - Key configs: `gleam.toml`, `manifest.toml`, `.editorconfig`
 
 ## Build, Test, and Development Commands
 - Install deps: `gleam deps download`
-- Build: `gleam build` (compiles sources and binaries)
 - Type check only: `gleam check`
-- Format: `gleam format` (applies project style)
+- Format: `gleam format`
 - Test: `gleam test` (runs gleeunit + Birdie snapshots)
-- Run stdio server: `gleam run -m mcp_stdio_server`
-- Run HTTP/WebSocket/SSE server: `gleam run -m mcp_full_server serve [port]`
 
 ## Coding Style & Naming Conventions
 - Language: Gleam (2‑space indentation, no tabs).
@@ -26,7 +24,7 @@
 
 ## Testing Guidelines
 - Frameworks: gleeunit for unit/integration; Birdie for snapshots.
-- Name tests `*_test.gleam`; mirror source paths (e.g., `test/mcp_toolkit_gleam/core/...`).
+- Name tests `*_test.gleam`; mirror source paths (e.g., `test/mcp_toolkit/core/...`).
 - Run all tests with `gleam test`; update snapshots intentionally and review diffs.
 - Aim for high coverage across core protocol and transports.
 

@@ -35,11 +35,11 @@
       ]
     },
     "contextual": {
-      "src/mcp_toolkit_gleam/core/": {
+      "src/mcp_toolkit/core/": {
         "description": "Core MCP protocol implementation",
         "focus": ["Protocol compliance", "Type safety", "Error handling"]
       },
-      "src/mcp_toolkit_gleam/transport/": {
+      "src/mcp_toolkit/transport/": {
         "description": "Transport layer implementations",
         "focus": ["Network reliability", "Performance", "Resource management"]
       },

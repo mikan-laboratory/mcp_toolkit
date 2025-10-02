@@ -1,95 +1,38 @@
-# MCP Toolkit Gleam
+# MCP Toolkit
 
-A ready-to-deploy Model Context Protocol (MCP) server starter written in Gleam. This fork focuses on simplicity: you get batteries-included binaries for stdio and HTTP transports, clear extension points, and deployment tooling so you can build your own MCP service without spelunking through the full toolkit.
+MCP Toolkit is a reusable library for building [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers in Gleam. It delivers a strongly typed server builder, complete protocol types, JSON schema helpers, and stdio plus Mist-based transports so you can add MCP support directly to your own applications.
 
-## What You Get
+## Features
 
-- **Two entrypoints**: `mcp_stdio_server` for dependency-free stdio and `mcp_full_server` for HTTP, WebSocket, and SSE on a single port.
-- **Server builder helpers** under `src/mcp_toolkit_gleam/core/` so you can register tools, resources, and prompts with type-safe decoders.
-- **Mist-powered HTTP server** with `/health`, `/mcp`, `/ws`, and `/sse` endpoints plus optional `.env` configuration.
-- **Dockerfile + Makefile** for container deployments, and scripts/tests that work out-of-the-box.
+- Typed server builder for registering tools, prompts, resources, and capability flags.
+- Complete MCP protocol types with JSON encoding/decoding and schema utilities.
+- Stdio transport that works on Erlang and JavaScript targets, plus optional Mist-powered WebSocket and SSE helpers.
+- Works on OTP 27+/Gleam 1.12+ with full test coverage via gleeunit and Birdie snapshots.
+
+## Installation
+
+After the package is published on Hex, add it to your project with:
+
+```bash
+gleam add mcp_toolkit
+```
+
+Until then you can depend on this repository directly:
+
+```toml
+[dependencies]
+mcp_toolkit = { path = "../mcp_toolkit" }
+```
 
 ## Quick Start
 
-### Prerequisites
-
-- Erlang/OTP 27 or newer
-- Gleam 1.12.0 or newer
-- (Optional) Docker for container builds
-
-### Install dependencies and build
-
-```bash
-gleam deps download
-gleam build
-```
-
-### Run the stdio server
-
-```bash
-gleam run -m mcp_stdio_server
-```
-
-### Run the HTTP server
-
-```bash
-# Defaults to $PORT, then .env PORT, then 8080
-gleam run -m mcp_full_server serve
-
-# Explicit port
-gleam run -m mcp_full_server serve 4000
-```
-
-### Quick curl checks (demo server)
-
-```bash
-# Start demo build (HTTP)
-MCP_TOOLKIT_DEMO=1 PORT=4000 gleam run -m mcp_full_server serve
-
-# List tools over HTTP JSON-RPC
-curl -X POST http://localhost:4000/mcp \
-  -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-
-# Call the sample weather tool
-curl -X POST http://localhost:4000/mcp \
-  -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_weather","arguments":{"location":"Paris"}}}'
-
-# Open SSE stream (note the `X-Conn-Id` header value, e.g. `sse_1`)
-curl -iN http://localhost:4000/sse
-
-# From another terminal, POST a message to that connection id (replace `sse_1`)
-curl -X POST "http://localhost:4000/sse?id=sse_1" \
-  -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/list"}'
-```
-
-Endpoints exposed when `serve` is running:
-
-| Route   | Method(s) | Description |
-|---------|-----------|-------------|
-| `/`     | GET       | Simple liveness check returning `ok` |
-| `/health` | GET     | JSON status response |
-| `/mcp`  | POST      | HTTP JSON-RPC endpoint |
-| `/ws`   | GET       | WebSocket endpoint |
-| `/sse`  | GET/POST  | Server-Sent Events stream + POST bridge |
-
-The `websocket` CLI argument remains as an alias for compatibility, but new deployments should prefer `serve`.
-
-## Build Your Own MCP Server
-
-1. **Create a server builder** by composing prompts, resources, and tools.
-2. **Decode input** using `gleam/dynamic/decode` helpers and the toolkit’s schema utilities.
-3. **Return the builder** from a function such as `create_app_server/0` and call it from `mcp_stdio_server` or `mcp_full_server`.
-
-The default builder lives in `src/app/server.gleam`. Replace the `build/0` function with something like:
+Create a module that constructs your MCP server:
 
 ```gleam
 import gleam/dynamic/decode
 import gleam/option.{None, Some}
-import mcp_toolkit_gleam/core/protocol as mcp
-import mcp_toolkit_gleam/core/server
+import mcp_toolkit
+import mcp_toolkit/core/protocol as mcp
 
 type EchoArgs {
   EchoArgs(text: String)
@@ -100,26 +43,18 @@ fn decode_echo_args() -> decode.Decoder(EchoArgs) {
   decode.success(EchoArgs(text:))
 }
 
-fn echo_tool() -> mcp.Tool {
-  let assert Ok(schema) =
-    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"text\": { \"type\": \"string\", \"description\": \"Text to echo\" }\n  },\n  \"required\": [\"text\"]\n}"
-    |> mcp.tool_input_schema
+fn handle_echo(request: mcp.CallToolRequest(EchoArgs)) {
+  let reply =
+    case request.arguments {
+      Some(EchoArgs(text: text)) -> text
+      None -> ""
+    }
 
-  mcp.Tool(
-    name: "echo",
-    input_schema: schema,
-    description: Some("Echo back provided text"),
-    annotations: None,
-  )
-}
-
-fn handle_echo(req: mcp.CallToolRequest(EchoArgs)) {
-  let text = case req.arguments { Some(EchoArgs(text: t)) -> t | None -> "" }
   mcp.CallToolResult(
     content: [
       mcp.TextToolContent(mcp.TextContent(
         type_: "text",
-        text: "You said: " <> text,
+        text: "You said: " <> reply,
         annotations: None,
       )),
     ],
@@ -129,83 +64,105 @@ fn handle_echo(req: mcp.CallToolRequest(EchoArgs)) {
   |> Ok
 }
 
-pub fn build() -> server.Server {
-  server.new("Example MCP", "0.1.0")
-  |> server.add_tool(echo_tool(), decode_echo_args(), handle_echo)
-  |> server.build
+pub fn build_server() -> mcp_toolkit.Server {
+  let assert Ok(schema) =
+    mcp.tool_input_schema("{\"type\":\"object\",\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"]}")
+
+  mcp_toolkit.new("Example MCP", "0.1.0")
+  |> mcp_toolkit.add_tool(
+    mcp.Tool(
+      name: "echo",
+      input_schema: schema,
+      description: Some("Echo text back to the caller"),
+      annotations: None,
+    ),
+    decode_echo_args(),
+    handle_echo,
+  )
+  |> mcp_toolkit.build()
 }
 ```
 
-Both binaries already call `app/server.build/0`, so no further wiring is required once you edit that module.
+Hook the server up to a transport. For stdio, use the built-in helper:
 
-Looking for a richer template? `src/examples/demo_server.gleam` contains the previous full-featured builder. Drop `examples/demo_server.build()` into `app/server.gleam` if you want to explore all prompts, resources, and tools before customising.
+```gleam
+import gleam/io
+import gleam/json
+import mcp_toolkit
+import mcp_toolkit/transport/stdio
 
-### Optional features
+pub fn main() {
+  let server = build_server()
+  loop(server)
+}
 
-- `server.enable_logging(builder)` emits MCP logging messages.
-- `server.add_resource_template/3` registers resource templates.
-- `server.page_limit(builder, n)` sets pagination size.
-
-## Configuration
-
-- `PORT` environment variable (or value supplied via CLI) controls the HTTP listener. `.env` files are read automatically when present.
-- All logging is printed to stdout/stderr so the app works well on platforms like Heroku, Render, Railway, Fly.io, and Docker containers.
-- The HTTP server binds to `0.0.0.0` to make container and platform deployments painless.
-
-## Deployment
-
-### Docker
-
-A ready-to-use Dockerfile lives at the repository root.
-
-```bash
-# Build the image
-docker build -t my-mcp-server .
-
-# Run locally (maps port 8080)
-docker run --rm -e PORT=8080 -p 8080:8080 my-mcp-server
+fn loop(server: mcp_toolkit.Server) {
+  case stdio.read_message() {
+    Ok(message) -> {
+      case mcp_toolkit.handle_message(server, message) {
+        Ok(Some(response)) | Error(response) ->
+          io.println(json.to_string(response))
+        _ -> Nil
+      }
+    }
+    Error(_) -> Nil
+  }
+  loop(server)
+}
 ```
 
-Set `PORT` in your hosting platform’s environment variables; the default is `8080` when unspecified.
+## Optional HTTP Transports
 
-### OTP release / bare metal
+Mist-based WebSocket and SSE adapters live under `mcp_toolkit/transport_optional/`. Import them directly to mount endpoints alongside your existing Mist router:
 
-```bash
-gleam build  # compiles to build/dev/erlang
-PORT=8080 gleam run -m mcp_full_server serve
+```gleam
+import mcp_toolkit/transport_optional/websocket
+import mcp_toolkit/transport_optional/sse
 ```
 
-For long-running services consider using `systemd`, `supervisord`, or another process manager that exports `PORT` (or passes it as an argument) and restarts the process on failure.
+They expect a `mcp_toolkit.Server` and return standard Mist `Response` values, letting you integrate MCP into any Mist application.
 
-## Testing & Formatting
+## Module Guide
+
+- `mcp_toolkit` – high level builder/transport helpers (re-exports `core/server`).
+- `mcp_toolkit/core/protocol` – MCP protocol types, decoders, and encoders.
+- `mcp_toolkit/core/json_schema*` – helpers for working with JSON Schema payloads.
+- `mcp_toolkit/core/transport` – generic transport abstractions.
+- `mcp_toolkit/transport/stdio` – cross-platform stdio transport implementation.
+- `mcp_toolkit/transport_optional/*` – Mist-based WebSocket and SSE adapters.
+
+## Development & Testing
 
 ```bash
-gleam check    # type-check only
-gleam test     # run gleeunit + Birdie snapshots
-gleam format   # apply project formatting rules
+gleam deps download
+gleam format
+gleam test
 ```
 
-Add new tests under `test/` mirroring the layout of your source modules.
+Birdie snapshot fixtures live under `birdie_snapshots/`. Run `gleam test --update-snapshots` to regenerate them when you make intentional output changes.
 
-## Repository Layout
+## Publishing Checklist
+
+1. Update `gleam.toml` with a new version and verify package metadata.
+2. Run `gleam format` and `gleam test` to ensure the release is clean.
+3. Publish with `gleam package publish` (requires Hex permissions).
+
+## Project Layout
 
 ```
 src/
-├── mcp_stdio_server.gleam        # Stdio executable
-├── mcp_full_server.gleam         # HTTP/WebSocket/SSE executable
-└── mcp_toolkit_gleam/
-    ├── core/                     # Protocol & server helpers
-    ├── transport/                # Core transports
-    └── transport_optional/       # Optional HTTP/SSE/WS transports
+├── mcp_ffi.erl
+├── mcp_ffi.mjs
+├── mcp_toolkit.gleam
+└── mcp_toolkit/
+    ├── core/
+    ├── transport/
+    └── transport_optional/
 
 test/
-└── ...                           # Matching tests + Birdie snapshots
+└── ...
 ```
 
-## Roadmap & TODOs
+## License
 
-- Add observability/logging examples (structured logs, metrics hooks).
-- Publish deployment guides for popular MCP hosting platforms.
-- Expand the examples directory with more tool/resource patterns.
-
-Contributions and feedback are welcome—open an issue or PR with questions about extending the starter.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.

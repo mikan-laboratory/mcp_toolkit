@@ -1,9 +1,9 @@
-name = "mcp_toolkit_gleam"
-version = "1.0.0"
+name = "mcp_toolkit"
+version = "0.1.0"
 
-description = "Production-ready Model Context Protocol (MCP) Toolkit - comprehensive server implementation in Gleam"
+description = "Gleam library for building Model Context Protocol servers and transports"
 licences = ["Apache-2.0"]
-repository = { type = "github", user = "mikkihugo", repo = "mcp_toolkit_gleam" }
+repository = { type = "github", user = "mikan-laboratory", repo = "mcp_toolkit" }
 
 # Core dependencies (required for all functionality)
 [dependencies]
@@ -15,23 +15,11 @@ justin = ">= 1.0.1 and < 2.0.0"
 gleam_erlang = ">= 0.34.0 and < 2.0.0"
 gleam_otp = ">= 1.0.0 and < 2.0.0"
 
-# HTTP/WebSocket dependencies for all transport functionality
-# Enable Mist for HTTP/WebSocket server support
+# HTTP/WebSocket dependencies for optional transport functionality
 mist = ">= 1.0.0 and < 6.0.0"
-dotenv_conf = ">= 0.2.0 and < 1.0.0"
 # wisp = ">= 0.10.0 and < 1.0.0"
 
 # Build targets
-[[binaries]]
-name = "mcp_stdio_server"
-path = "./src/mcp_stdio_server.gleam"
-
-[[binaries]]
-name = "mcp_full_server"
-path = "./src/mcp_full_server.gleam"
-
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
-argv = ">= 1.0.2 and < 2.0.0"
-simplifile = ">= 2.2.1 and < 3.0.0"
 birdie = ">= 1.2.7 and < 2.0.0"

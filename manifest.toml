@@ -4,9 +4,7 @@
 packages = [
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
   { name = "birdie", version = "1.4.0", build_tools = ["gleam"], requirements = ["argv", "edit_distance", "filepath", "glance", "gleam_community_ansi", "gleam_stdlib", "justin", "rank", "simplifile", "term_size", "trie_again"], otp_app = "birdie", source = "hex", outer_checksum = "28F6E2F195EFB637FBBE001DD67CF34B511C5BED8921956879D29928470CFAE2" },
-  { name = "dotenv_conf", version = "0.2.0", build_tools = ["gleam"], requirements = ["envoy", "gleam_stdlib", "simplifile"], otp_app = "dotenv_conf", source = "hex", outer_checksum = "DCE6F5CA18122AC043AC3D848DFB08826ED4C71E94A0D3B508E1E93C96B80D17" },
   { name = "edit_distance", version = "2.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "edit_distance", source = "hex", outer_checksum = "A1E485C69A70210223E46E63985FA1008B8B2DDA9848B7897469171B29020C05" },
-  { name = "envoy", version = "1.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "envoy", source = "hex", outer_checksum = "95FD059345AA982E89A0B6E2A3BF1CF43E17A7048DCD85B5B65D3B9E4E39D359" },
   { name = "exception", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "exception", source = "hex", outer_checksum = "329D269D5C2A314F7364BD2711372B6F2C58FA6F39981572E5CA68624D291F8C" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
   { name = "glance", version = "5.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "glexer"], otp_app = "glance", source = "hex", outer_checksum = "7F216D97935465FF4AC46699CD1C3E0FB19CB678B002E4ACAFCE256E96312F14" },
@@ -38,9 +36,7 @@ packages = [
 ]
 
 [requirements]
-argv = { version = ">= 1.0.2 and < 2.0.0" }
 birdie = { version = ">= 1.2.7 and < 2.0.0" }
-dotenv_conf = { version = ">= 0.2.0 and < 1.0.0" }
 gleam_erlang = { version = ">= 0.34.0 and < 2.0.0" }
 gleam_http = { version = ">= 4.0.0 and < 5.0.0" }
 gleam_json = { version = ">= 3.0.0 and < 4.0.0" }
@@ -50,4 +46,3 @@ gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 jsonrpcx = { version = ">= 1.0.0 and < 2.0.0" }
 justin = { version = ">= 1.0.1 and < 2.0.0" }
 mist = { version = ">= 1.0.0 and < 6.0.0" }
-simplifile = { version = ">= 2.2.1 and < 3.0.0" }

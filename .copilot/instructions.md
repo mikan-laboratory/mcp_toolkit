@@ -12,9 +12,9 @@ This is a production-ready Model Context Protocol (MCP) Toolkit implementation i
 - Prefer full words over abbreviations
 
 ### Code Organization
-- Core protocol definitions in `src/mcp_toolkit_gleam/core/`
-- Transport implementations in `src/mcp_toolkit_gleam/transport/`
-- Optional transports requiring external deps in `src/mcp_toolkit_gleam/transport_optional/`
+- Core protocol definitions in `src/mcp_toolkit/core/`
+- Transport implementations in `src/mcp_toolkit/transport/`
+- Optional transports requiring external deps in `src/mcp_toolkit/transport_optional/`
 - Main executables as direct files in `src/`
 
 ### Best Practices
