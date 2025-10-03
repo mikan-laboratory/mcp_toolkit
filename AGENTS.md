@@ -17,7 +17,7 @@
 
 ## Coding Style & Naming Conventions
 - Language: Gleam (2‑space indentation, no tabs).
-- Modules/files: snake_case (e.g., `json_schema_decode.gleam`).
+- Modules/files: snake_case (e.g., `json_schema.gleam`).
 - Functions/constants: snake_case; types/constructors: PascalCase.
 - Keep modules focused; colocate tests under `test/` with similar paths.
 - Use `gleam format` before committing; avoid trailing whitespace.
