@@ -3,26 +3,17 @@ import gleam/io
 import gleam/option.{type Option, None}
 import mcp_toolkit/transport/stdio
 
-/// Represents different transport mechanisms for MCP
+/// Transport configuration options supported by the runtime layer.
+///
+/// For now only stdio is supported; HTTP transports expose their own modules
+/// under `mcp_toolkit/transport` and don't integrate with this abstraction.
 pub type Transport {
   Stdio(StdioTransport)
-  // WebSocket and SSE transports require mist dependency
-  // They are available only when mist is compiled in
 }
 
 /// Configuration for stdio transport
 pub type StdioTransport {
   StdioTransport
-}
-
-/// Configuration for WebSocket transport
-pub type WebSocketTransport {
-  WebSocketTransport(port: Int, host: String)
-}
-
-/// Configuration for Server-Sent Events transport
-pub type SSETransport {
-  SSETransport(port: Int, host: String, endpoint: String)
 }
 
 /// Message to be sent over any transport
@@ -54,7 +45,6 @@ pub fn create_transport(
 ) -> Result(TransportInterface, String) {
   case transport {
     Stdio(_) -> create_stdio_transport()
-    // WebSocket and SSE transports are not available in stdio-only build
   }
 }
 

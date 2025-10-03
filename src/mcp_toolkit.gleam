@@ -9,7 +9,7 @@ import gleam/json
 import gleam/option.{type Option}
 import mcp_toolkit/core/protocol
 import mcp_toolkit/core/server
-import mcp_toolkit/core/transport
+import mcp_toolkit/transport/interface as transport
 
 /// Server builder pipeline. Combine helpers such as `add_tool` and `build` to
 /// produce an MCP server implementation.
@@ -20,18 +20,12 @@ pub type Builder =
 pub type Server =
   server.Server
 
-/// Transport wrappers for stdio or optional Mist-based HTTP transports.
+/// Transport configuration for stdio plus helpers for building runtime loops.
 pub type Transport =
   transport.Transport
 
 pub type StdioTransport =
   transport.StdioTransport
-
-pub type WebSocketTransport =
-  transport.WebSocketTransport
-
-pub type SSETransport =
-  transport.SSETransport
 
 pub type TransportMessage =
   transport.TransportMessage

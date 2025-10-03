@@ -2,7 +2,7 @@ import gleam/erlang/process
 import gleam/string
 import gleeunit
 import gleeunit/should
-import mcp_toolkit/transport_optional/sse
+import mcp_toolkit/transport/sse
 
 pub fn main() {
   gleeunit.main()

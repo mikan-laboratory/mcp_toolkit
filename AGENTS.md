@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `src/` — Gleam sources for the library:
   - `mcp_toolkit.gleam` (public re-exports)
-  - `mcp_toolkit/` with `core/`, `transport/`, and `transport_optional/` modules
+  - `mcp_toolkit/` with `core/` and `transport/` modules
   - `mcp_ffi.erl` and `mcp_ffi.mjs` power the cross-platform stdio transport
 - `test/` — mirrors `src/` layout; unit, integration, and snapshot tests
 - `birdie_snapshots/` — snapshot data used by Birdie tests

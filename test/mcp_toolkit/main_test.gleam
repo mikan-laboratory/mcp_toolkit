@@ -3,7 +3,7 @@ import gleam/result
 import gleeunit
 import gleeunit/should
 import mcp_toolkit
-import mcp_toolkit/core/transport
+import mcp_toolkit/transport/interface as transport
 
 pub fn main() {
   gleeunit.main()

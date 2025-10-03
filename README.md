@@ -111,13 +111,13 @@ fn loop(server: mcp_toolkit.Server) {
 }
 ```
 
-## Optional HTTP Transports
+## HTTP Transports
 
-Mist-based WebSocket and SSE adapters live under `mcp_toolkit/transport_optional/`. Import them directly to mount endpoints alongside your existing Mist router:
+Mist-based WebSocket and SSE adapters live under `mcp_toolkit/transport/`. Import them directly to mount endpoints alongside your existing Mist router:
 
 ```gleam
-import mcp_toolkit/transport_optional/websocket
-import mcp_toolkit/transport_optional/sse
+import mcp_toolkit/transport/websocket
+import mcp_toolkit/transport/sse
 ```
 
 They expect a `mcp_toolkit.Server` and return standard Mist `Response` values, letting you integrate MCP into any Mist application.
@@ -127,9 +127,9 @@ They expect a `mcp_toolkit.Server` and return standard Mist `Response` values, l
 - `mcp_toolkit` – high level builder/transport helpers (re-exports `core/server`).
 - `mcp_toolkit/core/protocol` – MCP protocol types, decoders, and encoders.
 - `mcp_toolkit/core/json_schema*` – helpers for working with JSON Schema payloads.
-- `mcp_toolkit/core/transport` – generic transport abstractions.
+- `mcp_toolkit/transport/interface` – stdio transport configuration and runtime helpers.
 - `mcp_toolkit/transport/stdio` – cross-platform stdio transport implementation.
-- `mcp_toolkit/transport_optional/*` – Mist-based WebSocket and SSE adapters.
+- `mcp_toolkit/transport/{sse, websocket}` – Mist-based HTTP adapters.
 
 ## Development & Testing
 
@@ -156,8 +156,7 @@ src/
 ├── mcp_toolkit.gleam
 └── mcp_toolkit/
     ├── core/
-    ├── transport/
-    └── transport_optional/
+    └── transport/
 
 test/
 └── ...
