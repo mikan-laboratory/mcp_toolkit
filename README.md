@@ -6,18 +6,18 @@ MCP Toolkit is a reusable library for building [Model Context Protocol](https://
 
 - Typed server builder for registering tools, prompts, resources, and capability flags.
 - Complete MCP protocol types with JSON encoding/decoding and schema utilities.
-- Stdio transport that works on Erlang and JavaScript targets, plus optional Mist-powered WebSocket and SSE helpers.
+- Stdio transport that works on Erlang and JavaScript targets, plus Mist-powered WebSocket and SSE helpers.
 - Works on OTP 27+/Gleam 1.12+ with full test coverage via gleeunit and Birdie snapshots.
 
 ## Installation
 
-After the package is published on Hex, add it to your project with:
+Add the package from Hex with:
 
 ```bash
 gleam add mcp_toolkit
 ```
 
-Until then you can depend on this repository directly:
+If you're hacking locally you can depend on this repository directly:
 
 ```toml
 [dependencies]
@@ -121,6 +121,34 @@ import mcp_toolkit/transport/sse
 ```
 
 They expect a `mcp_toolkit.Server` and return standard Mist `Response` values, letting you integrate MCP into any Mist application.
+
+When mounting them, start the SSE registry once and reuse it for both the long-lived GET connection and the POST endpoint that delivers server responses:
+
+```gleam
+import mcp_toolkit
+import mcp_toolkit/transport/sse
+import mcp_toolkit/transport/websocket
+
+pub fn handlers(server: mcp_toolkit.Server) {
+  let registry = sse.start_registry()
+
+  let sse_get = fn(req) {
+    sse.handle_get(req, registry)
+  }
+
+  let sse_post = fn(req) {
+    sse.handle_post(req, registry, server)
+  }
+
+  let ws_handler = fn(req) {
+    websocket.handle(req, server)
+  }
+
+  // Register `sse_get`, `sse_post`, and `ws_handler` with your Mist router.
+}
+```
+
+The SSE POST handler expects an `id` query parameter that matches the `X-Conn-Id` header assigned by the GET handler, so proxy both endpoints behind the same route.
 
 ## Module Guide
 
