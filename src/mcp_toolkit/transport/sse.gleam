@@ -1,9 +1,8 @@
 import gleam/bit_array
 import gleam/bytes_tree
 import gleam/dict
-
-// import gleam/http
 import gleam/erlang/process
+import gleam/http
 import gleam/http/request
 import gleam/http/response
 import gleam/int
@@ -14,6 +13,8 @@ import gleam/otp/actor
 import gleam/result
 import gleam/string_tree
 import mcp_toolkit/core/server
+import mcp_toolkit/transport/util
+
 import mist
 
 pub type SseMsg {
@@ -155,5 +156,17 @@ pub fn handle_post(
           )
       }
     }
+  }
+}
+
+pub fn handle_sse(
+  req: request.Request(mist.Connection),
+  registry: process.Subject(RegistryMsg),
+  server: server.Server,
+) -> response.Response(mist.ResponseData) {
+  case req.method {
+    http.Get -> handle_get(req, registry)
+    http.Post -> handle_post(req, registry, server)
+    _ -> util.method_not_allowed(["GET", "POST"])
   }
 }

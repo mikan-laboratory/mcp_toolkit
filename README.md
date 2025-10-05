@@ -6,7 +6,7 @@ MCP Toolkit is a reusable library for building [Model Context Protocol](https://
 
 - Typed server builder for registering tools, prompts, resources, and capability flags.
 - Complete MCP protocol types with JSON encoding/decoding and schema utilities.
-- Stdio transport that works on Erlang and JavaScript targets, plus Mist-powered WebSocket and SSE helpers.
+- Stdio transport that works on Erlang and JavaScript targets, plus Mist-powered WebSocket, SSE, and HTTP JSON-RPC helpers.
 - Works on OTP 27+/Gleam 1.12+ with full test coverage via gleeunit and Birdie snapshots.
 
 ## Installation
@@ -113,42 +113,68 @@ fn loop(server: mcp_toolkit.Server) {
 
 ## HTTP Transports
 
-Mist-based WebSocket and SSE adapters live under `mcp_toolkit/transport/`. Import them directly to mount endpoints alongside your existing Mist router:
+Mist-based WebSocket, SSE, and HTTP RPC adapters live under `mcp_toolkit/transport/`. Import them directly to mount endpoints alongside your existing Mist router:
 
 ```gleam
+import mcp_toolkit/transport/rpc
 import mcp_toolkit/transport/websocket
 import mcp_toolkit/transport/sse
 ```
 
 They expect a `mcp_toolkit.Server` and return standard Mist `Response` values, letting you integrate MCP into any Mist application.
 
-When mounting them, start the SSE registry once and reuse it for both the long-lived GET connection and the POST endpoint that delivers server responses:
+When mounting them, start the SSE registry once and reuse it across requests. The combined `handle_sse` helper coordinates both the long-lived GET stream and the POST endpoint that delivers server responses:
 
 ```gleam
 import mcp_toolkit
+import mcp_toolkit/transport/rpc
 import mcp_toolkit/transport/sse
 import mcp_toolkit/transport/websocket
 
 pub fn handlers(server: mcp_toolkit.Server) {
   let registry = sse.start_registry()
 
-  let sse_get = fn(req) {
-    sse.handle_get(req, registry)
+  let sse_handler = fn(req) {
+    sse.handle_sse(req, registry, server)
   }
 
-  let sse_post = fn(req) {
-    sse.handle_post(req, registry, server)
+  let rpc_handler = fn(req) {
+    rpc.handle_http_rpc(req, server, 1_000_000)
   }
 
   let ws_handler = fn(req) {
     websocket.handle(req, server)
   }
 
-  // Register `sse_get`, `sse_post`, and `ws_handler` with your Mist router.
+  // Register `sse_handler`, `rpc_handler`, and `ws_handler` with your Mist router.
 }
 ```
 
-The SSE POST handler expects an `id` query parameter that matches the `X-Conn-Id` header assigned by the GET handler, so proxy both endpoints behind the same route.
+The SSE handler expects an `id` query parameter on POST requests that matches the `X-Conn-Id` header assigned by the GET response, so proxy both endpoints behind the same route. The RPC helper processes JSON-RPC over plain HTTP POST and responds gracefully to browser preflight `OPTIONS` requests.
+
+Prefer the higher-level helpers when you just need a working transport. If you need more control—perhaps to add middleware, custom headers, or alternate routing—you can still call the constituent functions directly:
+
+```gleam
+import gleam/http
+import mcp_toolkit/transport/rpc
+import mcp_toolkit/transport/sse
+import mcp_toolkit/transport/util
+
+fn custom_router(req, registry, server) {
+  case req.method {
+    http.Get -> sse.handle_get(req, registry)
+    http.Post -> sse.handle_post(req, registry, server)
+    _ -> util.method_not_allowed(["GET", "POST"])
+  }
+}
+
+fn custom_rpc(req, server) {
+  case req.method {
+    http.Post -> rpc.process_http_rpc(req, server, 1_000_000)
+    _ -> util.method_not_allowed(["POST"])
+  }
+}
+```
 
 ## Module Guide
 
@@ -157,7 +183,7 @@ The SSE POST handler expects an `id` query parameter that matches the `X-Conn-Id
 - `mcp_toolkit/core/json_schema*` – helpers for working with JSON Schema payloads.
 - `mcp_toolkit/transport/interface` – stdio transport configuration and runtime helpers.
 - `mcp_toolkit/transport/stdio` – cross-platform stdio transport implementation.
-- `mcp_toolkit/transport/{sse, websocket}` – Mist-based HTTP adapters.
+- `mcp_toolkit/transport/{rpc, sse, websocket}` – Mist-based HTTP adapters.
 
 ## Development & Testing
 
