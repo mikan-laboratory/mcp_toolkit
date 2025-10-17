@@ -1,5 +1,5 @@
 name = "mcp_toolkit"
-version = "0.3.0"
+version = "0.3.1"
 
 description = "Gleam library for building Model Context Protocol servers and transports"
 licences = ["Apache-2.0"]

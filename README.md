@@ -2,6 +2,8 @@
 
 MCP Toolkit is a reusable library for building [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers in Gleam. It delivers a strongly typed server builder, complete protocol types, JSON schema helpers, and stdio plus Mist-based transports so you can add MCP support directly to your own applications.
 
+This codebase builds on [mikkihugo/mcp_toolkit_gleam](https://github.com/mikkihugo/mcp_toolkit_gleam) and updates it to target the latest Gleam release.
+
 ## Features
 
 - Typed server builder for registering tools, prompts, resources, and capability flags.
